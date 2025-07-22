@@ -11,23 +11,71 @@
   <body>
     {% extends "template.html" %}
 
-    {% block content %}
-    <div class="container mt-5">
-    <h2 class="mb-4 text-success">Customer View</h2>
-    <p>Welcome! Use this dashboard to:</p>
-    <ul class="list-group mb-4">
-        <li class="list-group-item">Find nearby pharmacies</li>
-        <li class="list-group-item">Check vaccine availability</li>
-        <li class="list-group-item">Get directions and pharmacy info</li>
-    </ul>
+      {% block content %}
+      <div class="container mt-5">
+        <h2 class="mb-4 text-success">Customer View</h2>
 
-    <div class="alert alert-warning">
-        <strong>Tip:</strong> Use filters to narrow results by city, state, or ZIP code.
-    </div>
+        <form method="get" action="{{ url_for('customer') }}" class="mb-4">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <input type="text" name="state" placeholder="State (e.g. FL)" value="{{ filters.state or '' }}" class="form-control" />
+            </div>
+            <div class="col-md-3">
+              <input type="text" name="city" placeholder="City" value="{{ filters.city or '' }}" class="form-control" />
+            </div>
+            <div class="col-md-3">
+              <input type="text" name="zip" placeholder="ZIP code" value="{{ filters.zip or '' }}" class="form-control" />
+            </div>
+            <div class="col-md-3">
+              <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+          </div>
+        </form>
 
-    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary mt-3">← Back to Home</a>
-    </div>
-    {% endblock %}
+        <p>Use this dashboard to:</p>
+        <ul class="list-group mb-4">
+          <li class="list-group-item">Find nearby pharmacies</li>
+          <li class="list-group-item">Check vaccine availability</li>
+          <li class="list-group-item">Get directions and pharmacy info</li>
+        </ul>
+
+        <div class="alert alert-warning">
+          <strong>Tip:</strong> Use filters above to narrow results by state, city, or ZIP code.
+        </div>
+
+        <h4 class="mt-4">Pharmacies:</h4>
+        <table class="table table-bordered table-striped mt-3">
+          <thead>
+            <tr>
+              <th>Provider Name</th>
+              <th>Address</th>
+              <th>City</th>
+              <th>State</th>
+              <th>Zip</th>
+              <th>Phone</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for provider in providers %}
+            <tr>
+              <td>{{ provider['Provider Name'] }}</td>
+              <td>
+                {{ provider['Address 1'] }}{% if provider['Address 2'] %}, {{ provider['Address 2'] }}{% endif %}
+              </td>
+              <td>{{ provider['City'] }}</td>
+              <td>{{ provider['State'] }}</td>
+              <td>{{ provider['Zip'] }}</td>
+              <td>{{ provider['Public Phone'] }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center">No providers found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <a href="{{ url_for('home') }}" class="btn btn-outline-secondary mt-3">← Back to Home</a>
+      </div>
+      {% endblock %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
   </body>

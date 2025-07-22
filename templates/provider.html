@@ -13,19 +13,56 @@
 
     {% block content %}
     <div class="container mt-5">
-    <h2 class="mb-4 text-primary">Provider Dashboard</h2>
-    <p>Welcome, provider! Here you can:</p>
-    <ul class="list-group mb-4">
-        <li class="list-group-item">Upload or update pharmacy data</li>
-        <li class="list-group-item">View analytics on vaccine distribution</li>
-        <li class="list-group-item">Manage your location and medication availability</li>
-    </ul>
+      <h2 class="mb-4 text-primary">Provider View</h2>
 
-    <div class="alert alert-info">
-        <strong>Coming Soon:</strong> AI assistance for optimizing vaccine inventory.
-    </div>
+      <form method="get" action="{{ url_for('provider') }}" class="mb-4">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <input type="text" name="state" placeholder="State (e.g. FL)" value="{{ filters.state or '' }}" class="form-control" />
+          </div>
+          <div class="col-md-3">
+            <input type="text" name="city" placeholder="City" value="{{ filters.city or '' }}" class="form-control" />
+          </div>
+          <div class="col-md-3">
+            <input type="text" name="zip" placeholder="ZIP code" value="{{ filters.zip or '' }}" class="form-control" />
+          </div>
+          <div class="col-md-3">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+          </div>
+        </div>
+      </form>
 
-    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary mt-3">← Back to Home</a>
+      <h4 class="mt-4">Providers:</h4>
+      <table class="table table-bordered table-striped mt-3">
+        <thead>
+          <tr>
+            <th>Provider Name</th>
+            <th>Address</th>
+            <th>City</th>
+            <th>State</th>
+            <th>Zip</th>
+            <th>Phone</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for provider in providers %}
+          <tr>
+            <td>{{ provider['Provider Name'] }}</td>
+            <td>
+              {{ provider['Address 1'] }}{% if provider['Address 2'] %}, {{ provider['Address 2'] }}{% endif %}
+            </td>
+            <td>{{ provider['City'] }}</td>
+            <td>{{ provider['State'] }}</td>
+            <td>{{ provider['Zip'] }}</td>
+            <td>{{ provider['Public Phone'] }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center">No providers found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <a href="{{ url_for('home') }}" class="btn btn-outline-secondary mt-3">← Back to Home</a>
     </div>
     {% endblock %}
 

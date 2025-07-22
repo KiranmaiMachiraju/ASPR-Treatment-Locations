@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{url_for('static',filename='css/app.css')}}">
+    <title>Hello, world!</title>
+  </head>
+  <body>
+    {% extends "template.html" %}
+
+    {% block content %}
+    <div class="container mt-5">
+    <h2 class="mb-4 text-primary">Provider Dashboard</h2>
+    <p>Welcome, provider! Here you can:</p>
+    <ul class="list-group mb-4">
+        <li class="list-group-item">Upload or update pharmacy data</li>
+        <li class="list-group-item">View analytics on vaccine distribution</li>
+        <li class="list-group-item">Manage your location and medication availability</li>
+    </ul>
+
+    <div class="alert alert-info">
+        <strong>Coming Soon:</strong> AI assistance for optimizing vaccine inventory.
+    </div>
+
+    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary mt-3">← Back to Home</a>
+    </div>
+    {% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+  </body>
+</html>

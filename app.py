@@ -23,85 +23,118 @@ def choose_role():
             return redirect(url_for('customer'))
     return render_template('choose_role.html')
 
-@app.route('/provider', methods=['GET', 'POST'])
-def provider():
+@app.route('/provider/start', methods=['GET', 'POST'])
+def provider_start():
     conn = get_db_connection()
-    # Fetch distinct states for dropdown
-    states = [row['State'] for row in conn.execute('SELECT DISTINCT State FROM locations ORDER BY State')]
+    states = [row['state'] for row in conn.execute(
+        'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
+    conn.close()
+
+    if request.method == 'POST':
+        selected_state = request.form.get('state')
+        if selected_state:
+            return redirect(url_for('provider', state=selected_state))
     
-    selected_state = request.form.get('state')
-    selected_city = request.form.get('city')
-    selected_zip = request.form.get('zip')
+    return render_template('provider_start.html', states=states)
 
-    # Build base query and params list
-    query = "SELECT * FROM locations WHERE 1=1"
-    params = []
+@app.route('/customer/start', methods=['GET', 'POST'])
+def customer_start():
+    conn = get_db_connection()
+    states = [row['state'] for row in conn.execute(
+        'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
+    conn.close()
 
-    if selected_state:
-        query += " AND State = ?"
-        params.append(selected_state)
+    if request.method == 'POST':
+        selected_state = request.form.get('state')
+        if selected_state:
+            return redirect(url_for('customer', state=selected_state))
+    
+    return render_template('customer_start.html', states=states)
+
+@app.route('/provider')
+def provider():
+    selected_state = request.args.get('state')
+
+    if not selected_state:
+        return redirect(url_for('provider_start'))  # Don't load anything without a state
+
+    conn = get_db_connection()
+
+    # Get dropdown data
+    states = [row['state'] for row in conn.execute(
+        'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
+
+    selected_city = request.args.get('city')
+    selected_zip = request.args.get('zip')
+
+    query = "SELECT * FROM locations WHERE state = ?"
+    params = [selected_state]
+
     if selected_city:
-        query += " AND City = ?"
+        query += " AND city = ?"
         params.append(selected_city)
     if selected_zip:
-        query += " AND Zip = ?"
+        query += " AND zip = ?"
         params.append(selected_zip)
 
-    results = conn.execute(query, params).fetchall()
+    providers = conn.execute(query, params).fetchall()
 
-    # Fetch cities for selected state
-    cities = []
-    if selected_state:
-        cities = [row['City'] for row in conn.execute("SELECT DISTINCT City FROM locations WHERE State = ? ORDER BY City", (selected_state,))]
+    # City dropdown
+    cities = [row['city'] for row in conn.execute(
+        "SELECT DISTINCT city FROM locations WHERE state = ? AND city IS NOT NULL ORDER BY city", (selected_state,))]
 
     conn.close()
+
+    filters = {'state': selected_state, 'city': selected_city, 'zip': selected_zip}
 
     return render_template('provider.html',
                            states=states,
                            cities=cities,
-                           results=results,
-                           selected_state=selected_state,
-                           selected_city=selected_city,
-                           selected_zip=selected_zip)
+                           providers=providers,
+                           filters=filters)
 
-@app.route('/customer', methods=['GET', 'POST'])
+
+@app.route('/customer')
 def customer():
-    # For now, same as provider, but you can customize this view later
+    selected_state = request.args.get('state')
+
+    if not selected_state:
+        return redirect(url_for('customer_start'))  # Don't load anything without a state
+
     conn = get_db_connection()
-    states = [row['State'] for row in conn.execute('SELECT DISTINCT State FROM locations ORDER BY State')]
-    
-    selected_state = request.form.get('state')
-    selected_city = request.form.get('city')
-    selected_zip = request.form.get('zip')
 
-    query = "SELECT * FROM locations WHERE 1=1"
-    params = []
+    # Get dropdown data
+    states = [row['state'] for row in conn.execute(
+        'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
 
-    if selected_state:
-        query += " AND State = ?"
-        params.append(selected_state)
+    selected_city = request.args.get('city')
+    selected_zip = request.args.get('zip')
+
+    query = "SELECT * FROM locations WHERE state = ?"
+    params = [selected_state]
+
     if selected_city:
-        query += " AND City = ?"
+        query += " AND city = ?"
         params.append(selected_city)
     if selected_zip:
-        query += " AND Zip = ?"
+        query += " AND zip = ?"
         params.append(selected_zip)
 
-    results = conn.execute(query, params).fetchall()
+    providers = conn.execute(query, params).fetchall()
 
-    cities = []
-    if selected_state:
-        cities = [row['City'] for row in conn.execute("SELECT DISTINCT City FROM locations WHERE State = ? ORDER BY City", (selected_state,))]
+    # City dropdown
+    cities = [row['city'] for row in conn.execute(
+        "SELECT DISTINCT city FROM locations WHERE state = ? AND city IS NOT NULL ORDER BY city", (selected_state,))]
 
     conn.close()
+
+    filters = {'state': selected_state, 'city': selected_city, 'zip': selected_zip}
 
     return render_template('customer.html',
                            states=states,
                            cities=cities,
-                           results=results,
-                           selected_state=selected_state,
-                           selected_city=selected_city,
-                           selected_zip=selected_zip)
+                           providers=providers,
+                           filters=filters)
 
 if __name__ == '__main__':
     app.run(debug=True)

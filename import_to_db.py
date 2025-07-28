@@ -1,23 +1,52 @@
+import requests
 import pandas as pd
 import sqlite3
+import time
 
-csv_path = 'data/ASPR_Treatments_Locator.csv'  # or 'data/aspr_data.csv' if inside data folder
-db_path = 'aspr_data.db'
+API_URL = 'https://healthdata.gov/resource/879u-23sm.json'
+DB_PATH = 'aspr_data.db'
+TABLE_NAME = 'locations'
+CHUNK_SIZE = 1000  # Max allowed by API
+OFFSET = 0
 
-print("Loading CSV file...")
-df = pd.read_csv(csv_path)
+all_data = []
 
-print("Cleaning column names...")
-# Optional: strip spaces from column names for easier querying
+print("Fetching data from API...")
+
+while True:
+    params = {
+        '$limit': CHUNK_SIZE,
+        '$offset': OFFSET
+    }
+
+    print(f"Fetching rows {OFFSET} to {OFFSET + CHUNK_SIZE}...")
+    response = requests.get(API_URL, params=params)
+
+    if response.status_code != 200:
+        print(f"Error fetching data: {response.status_code}")
+        break
+
+    chunk = response.json()
+    if not chunk:
+        print("No more data.")
+        break
+
+    all_data.extend(chunk)
+    OFFSET += CHUNK_SIZE
+    time.sleep(0.2)  # Be gentle to the server
+
+# Convert to DataFrame
+df = pd.DataFrame(all_data)
+
+print(f"Total rows fetched: {len(df)}")
+
+# Clean column names
 df.columns = [col.strip().replace(' ', '_') for col in df.columns]
 
-print(f"Columns after cleaning: {df.columns.tolist()}")
-
-print("Connecting to SQLite database...")
-conn = sqlite3.connect(db_path)
-
-print("Writing data to table 'locations'...")
-df.to_sql('locations', conn, if_exists='replace', index=False)
-
+# Store in SQLite
+print("Writing to database...")
+conn = sqlite3.connect(DB_PATH)
+df.to_sql(TABLE_NAME, conn, if_exists='replace', index=False)
 conn.close()
-print("Done! CSV imported into SQLite database successfully.")
+
+print("Done!")

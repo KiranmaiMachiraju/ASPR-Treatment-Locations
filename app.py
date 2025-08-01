@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
 
 app = Flask(__name__)
@@ -8,6 +8,26 @@ def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # rows behave like dicts
     return conn
+
+@app.route('/api/states')
+def get_states():
+    conn = get_db_connection()
+    rows = conn.execute("""
+        SELECT State as state,
+               AVG(Latitude) as lat,
+               AVG(Longitude) as lng
+        FROM locations
+        WHERE Latitude IS NOT NULL AND Longitude IS NOT NULL
+        GROUP BY State
+    """).fetchall()
+    conn.close()
+
+    states = [
+        {"state": row["state"], "lat": row["lat"], "lng": row["lng"]}
+        for row in rows
+    ]
+    return jsonify(states)
+
 
 @app.route('/')
 def home():

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>USA Map - Google Maps API</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <style>
+      /* Make the map full-screen */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <!-- Load Google Maps JavaScript API -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAckXDlywKnysPfXmrNtnxk-1SHkFk0OQ&callback=initMap"
+      async
+      defer
+    ></script>
+
+    <script>
+      function initMap() {
+        const usaCenter = { lat: 39.8283, lng: -98.5795 }; // Approximate center of the continental US
+        const map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 4,
+          center: usaCenter,
+        });
+      }
+    </script>
+  </body>
+</html>

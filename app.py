@@ -136,5 +136,9 @@ def customer():
                            providers=providers,
                            filters=filters)
 
+@app.route('/test_maps')
+def test_maps():
+    return render_template('test_maps.html')
+
 if __name__ == '__main__':
     app.run(debug=True)

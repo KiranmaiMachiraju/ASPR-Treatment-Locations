@@ -1,0 +1,78 @@
+{% extends "template.html" %}
+
+{% block content %}
+<h2>Filter Providers by Vaccination and Location</h2>
+
+<form method="POST">
+  <div>
+    <label for="state">State:</label>
+    <select name="state" id="state">
+      <option value="">-- All States --</option>
+      {% for state in states %}
+        <option value="{{ state }}" {% if selected_state == state %}selected{% endif %}>{{ state }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="city">City:</label>
+    <select name="city" id="city">
+      <option value="">-- All Cities --</option>
+      {% for city in cities %}
+        <option value="{{ city }}" {% if selected_city == city %}selected{% endif %}>{{ city }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="zip">Zip:</label>
+    <select name="zip" id="zip">
+      <option value="">-- All Zipcodes --</option>
+      {% for zip in zips %}
+        <option value="{{ zip }}" {% if selected_zip == zip %}selected{% endif %}>{{ zip }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <hr>
+
+  <div>
+    <p><strong>Select Available Vaccinations:</strong></p>
+    {% for vacc in vaccinations %}
+      <label>
+        <input type="checkbox" name="vaccinations" value="{{ vacc.field }}"
+               {% if vacc.field in selected_vaccinations %}checked{% endif %}>
+        {{ vacc.label }}
+      </label><br>
+    {% endfor %}
+  </div>
+
+  <button type="submit">Search</button>
+</form>
+
+{% if providers %}
+  <h3>Matching Providers ({{ providers | length }})</h3>
+  <table border="1" cellpadding="5">
+    <thead>
+      <tr>
+        <th>Provider Name</th>
+        <th>Address</th>
+        <th>City</th>
+        <th>State</th>
+        <th>Zip</th>
+        <th>Phone</th>
+        <!-- Add more columns if needed -->
+      </tr>
+    </thead>
+    <tbody>
+      {% for provider in providers %}
+        <tr>
+          <td>{{ provider['Provider_Name'] }}</td>
+          <td>{{ provider['Address_1'] }}</td>
+          <td>{{ provider['City'] }}</td>
+          <td>{{ provider['State'] }}</td>
+          <td>{{ provider['Zip'] }}</td>
+          <td>{{ provider['Public_Phone'] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+{% endblock %}

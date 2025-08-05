@@ -40,7 +40,7 @@ def choose_role():
         if role == 'provider':
             return redirect(url_for('provider'))
         elif role == 'customer':
-            return redirect(url_for('customer'))
+            return redirect(url_for('customer_start'))
     return render_template('choose_role.html')
 
 @app.route('/provider/start', methods=['GET', 'POST'])
@@ -50,13 +50,11 @@ def provider_start():
         'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
     conn.close()
 
-    if request.method == 'POST':
-        selected_state = request.form.get('state')
-        if selected_state:
-            return redirect(url_for('provider', state=selected_state))
-    
-    return render_template('provider_start.html', states=states)
+    return render_template('provider_start.html',
+                           states=states,
+                           vaccinations=vaccinations_list)
 
+# UPDATED: customer_start now renders test_maps.html with states for map markers
 @app.route('/customer/start', methods=['GET', 'POST'])
 def customer_start():
     conn = get_db_connection()
@@ -69,7 +67,8 @@ def customer_start():
         if selected_state:
             return redirect(url_for('customer', state=selected_state))
     
-    return render_template('customer_start.html', states=states)
+    # Render the map page here instead of the old customer_start.html
+    return render_template('test_maps.html', states=states)
 
 @app.route('/provider')
 def provider():
@@ -159,6 +158,93 @@ def customer():
 @app.route('/test_maps')
 def test_maps():
     return render_template('test_maps.html')
+
+vaccinations_list = [
+    {'field': 'Is_Flu', 'label': 'Flu Vaccine'},
+    {'field': 'Is_COVID-19', 'label': 'COVID-19 Vaccine'},
+    {'field': 'Has_USG_Product', 'label': 'USG Product Available'},
+    {'field': 'Has_Commercial_Product', 'label': 'Commercial Product Available'},
+    {'field': 'Has_Paxlovid', 'label': 'Paxlovid'},
+    {'field': 'Has_Commercial_Paxlovid', 'label': 'Commercial Paxlovid'},
+    {'field': 'Has_USG_Paxlovid', 'label': 'USG Paxlovid'},
+    {'field': 'Has_Lagevrio', 'label': 'Lagevrio'},
+    {'field': 'Has_Commercial_Lagevrio', 'label': 'Commercial Lagevrio'},
+    {'field': 'Has_USG_Lagevrio', 'label': 'USG Lagevrio'},
+    {'field': 'Has_Veklury', 'label': 'Veklury'},
+    {'field': 'Has_Oseltamivir_Generic', 'label': 'Oseltamivir Generic'},
+    {'field': 'Has_Oseltamivir_Suspension', 'label': 'Oseltamivir Suspension'},
+    {'field': 'Has_Oseltamivir_Tamiflu', 'label': 'Oseltamivir Tamiflu'},
+    {'field': 'Has_Baloxavir', 'label': 'Baloxavir'},
+    {'field': 'Has_Zanamivir', 'label': 'Zanamivir'},
+    {'field': 'Has_Peramivir', 'label': 'Peramivir'}
+]
+
+@app.route('/provider/vaccinations', methods=['GET', 'POST'])
+def provider_vaccinations():
+    conn = get_db_connection()
+
+    # Fetch filter options
+    states = [row['state'] for row in conn.execute(
+        'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
+
+    cities = []
+    zips = []
+
+    selected_vaccinations = []
+    selected_state = request.form.get('state') if request.method == 'POST' else None
+    selected_city = request.form.get('city') if request.method == 'POST' else None
+    selected_zip = request.form.get('zip') if request.method == 'POST' else None
+
+    # Load cities and zips based on selected state
+    if selected_state:
+        cities = [row['city'] for row in conn.execute(
+            'SELECT DISTINCT city FROM locations WHERE state = ? AND city IS NOT NULL ORDER BY city', (selected_state,))]
+
+    if selected_city:
+        zips = [row['zip'] for row in conn.execute(
+            'SELECT DISTINCT zip FROM locations WHERE city = ? AND zip IS NOT NULL ORDER BY zip', (selected_city,))]
+
+    providers = []
+
+    if request.method == 'POST':
+        selected_vaccinations = request.form.getlist('vaccinations')
+        where_clauses = []
+        params = []
+
+        if selected_vaccinations:
+            where_clauses.append('(' + ' OR '.join([f'"{vacc}" = 1' for vacc in selected_vaccinations]) + ')')
+
+        if selected_state:
+            where_clauses.append('state = ?')
+            params.append(selected_state)
+
+        if selected_city:
+            where_clauses.append('city = ?')
+            params.append(selected_city)
+
+        if selected_zip:
+            where_clauses.append('zip = ?')
+            params.append(selected_zip)
+
+        query = "SELECT * FROM locations"
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
+
+        providers = conn.execute(query, params).fetchall()
+
+    conn.close()
+
+    return render_template('provider_vaccinations.html',
+                           vaccinations=vaccinations_list,
+                           selected_vaccinations=selected_vaccinations,
+                           providers=providers,
+                           states=states,
+                           cities=cities,
+                           zips=zips,
+                           selected_state=selected_state,
+                           selected_city=selected_city,
+                           selected_zip=selected_zip)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

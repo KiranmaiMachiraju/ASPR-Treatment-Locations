@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3 
+from openai_helper import call_openai_chat
 
 app = Flask(__name__)
 DB_PATH = 'aspr_data.db'
@@ -245,6 +246,18 @@ def provider_vaccinations():
                            selected_city=selected_city,
                            selected_zip=selected_zip)
 
+
+@app.route("/chatbot")
+def chatbot():
+    return render_template("chat_bot.html")
+
+
+@app.route("/chatbot/message", methods=["POST"])
+def chatbot_message():
+    data = request.get_json()
+    user_message = data.get("message")
+    bot_response = call_openai_chat(user_message)
+    return jsonify({"response": bot_response})
 
 if __name__ == '__main__':
     app.run(debug=True)

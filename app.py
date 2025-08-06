@@ -1,7 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
-import sqlite3
-import os
-from gemini_helper import call_gemini
+import sqlite3 
 
 app = Flask(__name__)
 DB_PATH = 'aspr_data.db'
@@ -247,50 +245,6 @@ def provider_vaccinations():
                            selected_city=selected_city,
                            selected_zip=selected_zip)
 
-
-# ---- Chatbot route (render page) ----
-@app.route('/chatbot')
-def chatbot_home():
-    return render_template('chat.html')
-
-# ---- Chatbot message handler with Gemini + DB ----
-@app.route('/chatbot/message', methods=['POST'])
-def chatbot_message():
-    user_message = request.json.get("message", "")
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    query = """
-        SELECT Provider_Name, Address_1, Address_2, City, State, Zip
-        FROM locations
-        WHERE Provider_Name IS NOT NULL
-        LIMIT 5
-    """
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    conn.close()
-
-    facilities = [dict(row) for row in rows]
-    context = "\n".join([
-        f"{f['Provider_Name']} - {f.get('Address_1', '')} {f.get('Address_2', '')}, {f.get('City', '')}, {f.get('State', '')} {f.get('Zip', '')}"
-        for f in facilities
-    ])
-
-    prompt = f"""
-You are a helpful assistant who helps people find treatment facilities.
-A user asked: "{user_message}"
-
-Here are 5 facilities from the database:
-
-{context}
-
-Using this data, answer the user's question clearly and helpfully.
-"""
-
-    gemini_response = call_gemini(prompt)
-
-    return jsonify({"response": gemini_response})
 
 if __name__ == '__main__':
     app.run(debug=True)

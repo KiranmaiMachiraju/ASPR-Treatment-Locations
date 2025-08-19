@@ -6,9 +6,10 @@ DB_PATH = 'aspr_data.db'
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # rows behave like dicts
+    conn.row_factory = sqlite3.Row
     return conn
 
+# ---------------- API ----------------
 @app.route('/api/states')
 def get_states():
     conn = get_db_connection()
@@ -22,64 +23,95 @@ def get_states():
     """).fetchall()
     conn.close()
 
-    states = [
-        {"state": row["state"], "lat": row["lat"], "lng": row["lng"]}
-        for row in rows
-    ]
+    states = [{"state": row["state"], "lat": row["lat"], "lng": row["lng"]} for row in rows]
     return jsonify(states)
 
-
+# ---------------- HOME ----------------
 @app.route('/')
 def home():
     return render_template('home.html')
 
+# ---------------- CHOOSE ROLE ----------------
 @app.route('/choose_role', methods=['GET', 'POST'])
 def choose_role():
     if request.method == 'POST':
         role = request.form.get('role')
         if role == 'provider':
-            return redirect(url_for('provider'))
+            return redirect(url_for('provider_start'))
         elif role == 'customer':
             return redirect(url_for('customer_start'))
     return render_template('choose_role.html')
 
+# ---------------- PROVIDER START ----------------
 @app.route('/provider/start', methods=['GET', 'POST'])
 def provider_start():
     conn = get_db_connection()
+
+    # States for dropdown
     states = [row['state'] for row in conn.execute(
         'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
-    conn.close()
 
-    return render_template('provider_start.html',
-                           states=states,
-                           vaccinations=vaccinations_list)
+    # --- KPIs ---
+    kpi_query = """
+        SELECT
+            COUNT(*) AS total_providers,
+            SUM(Is_PAP_Site) AS total_pap_sites,
+            SUM(Prescribing_Services_Available) AS total_prescribers,
+            SUM(Has_Paxlovid) AS total_paxlovid,
+            SUM(Has_Lagevrio) AS total_lagevrio,
+            SUM(Has_Veklury) AS total_veklury,
+            SUM(Is_Flu) AS total_flu,
+            SUM("Is_COVID-19") AS total_covid
+        FROM locations
+    """
+    kpis = conn.execute(kpi_query).fetchone()
 
-# UPDATED: customer_start now renders test_maps.html with states for map markers
-@app.route('/customer/start', methods=['GET', 'POST'])
-def customer_start():
-    conn = get_db_connection()
-    states = [row['state'] for row in conn.execute(
-        'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
+    # --- Chart data ---
+    # Providers per state
+    state_count_rows = conn.execute("""
+        SELECT state, COUNT(*) AS provider_count
+        FROM locations
+        GROUP BY state
+        ORDER BY provider_count DESC
+    """).fetchall()
+    states_chart = [row['state'] for row in state_count_rows]
+    providers_chart = [row['provider_count'] for row in state_count_rows]
+
+    # Medication availability (Paxlovid, Lagevrio, Veklury)
+    med_rows = conn.execute("""
+        SELECT
+            SUM(Has_Paxlovid) AS paxlovid,
+            SUM(Has_Lagevrio) AS lagevrio,
+            SUM(Has_Veklury) AS veklury
+        FROM locations
+    """).fetchone()
     conn.close()
 
     if request.method == 'POST':
         selected_state = request.form.get('state')
         if selected_state:
-            return redirect(url_for('customer', state=selected_state))
-    
-    # Render the map page here instead of the old customer_start.html
-    return render_template('test_maps.html', states=states)
+            return redirect(url_for('provider', state=selected_state))
 
+    return render_template(
+        'provider_start.html',
+        states=states,
+        kpis=kpis,
+        states_chart=states_chart,
+        providers_chart=providers_chart,
+        med_rows=med_rows
+    )
+
+
+# ---------------- PROVIDER ----------------
 @app.route('/provider')
 def provider():
     selected_state = request.args.get('state')
 
     if not selected_state:
-        return redirect(url_for('provider_start'))  # Don't load anything without a state
+        return redirect(url_for('provider_start'))
 
     conn = get_db_connection()
 
-    # Get dropdown data
     states = [row['state'] for row in conn.execute(
         'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
 
@@ -88,7 +120,6 @@ def provider():
 
     query = "SELECT * FROM locations WHERE state = ?"
     params = [selected_state]
-
     if selected_city:
         query += " AND city = ?"
         params.append(selected_city)
@@ -101,6 +132,32 @@ def provider():
     # City dropdown
     cities = [row['city'] for row in conn.execute(
         "SELECT DISTINCT city FROM locations WHERE state = ? AND city IS NOT NULL ORDER BY city", (selected_state,))]
+
+    # --- KPIs ---
+    stats_query = """
+        SELECT
+            COUNT(*) AS total_providers,
+            SUM(Is_Flu) AS total_flu,
+            SUM("Is_COVID-19") AS total_covid,
+            SUM(Has_USG_Product) AS total_usg_product,
+            SUM(Has_Commercial_Product) AS total_commercial_product,
+            SUM(Has_Paxlovid) AS total_paxlovid,
+            SUM(Has_Commercial_Paxlovid) AS total_commercial_paxlovid,
+            SUM(Has_USG_Paxlovid) AS total_usg_paxlovid,
+            SUM(Has_Lagevrio) AS total_lagevrio,
+            SUM(Has_Commercial_Lagevrio) AS total_commercial_lagevrio,
+            SUM(Has_USG_Lagevrio) AS total_usg_lagevrio,
+            SUM(Has_Veklury) AS total_veklury,
+            SUM(Has_Oseltamivir_Generic) AS total_oseltamivir_generic,
+            SUM(Has_Oseltamivir_Suspension) AS total_oseltamivir_suspension,
+            SUM(Has_Oseltamivir_Tamiflu) AS total_oseltamivir_tamiflu,
+            SUM(Has_Baloxavir) AS total_baloxavir,
+            SUM(Has_Zanamivir) AS total_zanamivir,
+            SUM(Has_Peramivir) AS total_peramivir
+        FROM locations
+        WHERE state = ?
+    """
+    stats = conn.execute(stats_query, (selected_state,)).fetchone()
 
     conn.close()
 
@@ -110,43 +167,53 @@ def provider():
                            states=states,
                            cities=cities,
                            providers=providers,
-                           filters=filters)
+                           filters=filters,
+                           stats=stats)
+
+# ---------------- CUSTOMER START ----------------
+@app.route('/customer/start', methods=['GET', 'POST'])
+def customer_start():
+    conn = get_db_connection()
+    states = [row['State'] for row in conn.execute(
+        'SELECT DISTINCT State FROM locations WHERE State IS NOT NULL ORDER BY State')]
+    conn.close()
+
+    if request.method == 'POST':
+        selected_state = request.form.get('state')
+        if selected_state:
+            return redirect(url_for('customer', state=selected_state))
+    
+    return render_template('test_maps.html', states=states)
 
 
+# ---------------- CUSTOMER VIEW ----------------
 @app.route('/customer')
 def customer():
     selected_state = request.args.get('state')
-
     if not selected_state:
-        return redirect(url_for('customer_start'))  # Don't load anything without a state
+        return redirect(url_for('customer_start'))
 
     conn = get_db_connection()
-
-    # Get dropdown data
-    states = [row['state'] for row in conn.execute(
-        'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
-
+    states = [row['State'] for row in conn.execute(
+        'SELECT DISTINCT State FROM locations WHERE State IS NOT NULL ORDER BY State')]
+    
     selected_city = request.args.get('city')
     selected_zip = request.args.get('zip')
 
-    query = "SELECT * FROM locations WHERE state = ?"
+    query = "SELECT * FROM locations WHERE State = ?"
     params = [selected_state]
-
     if selected_city:
-        query += " AND city = ?"
+        query += " AND City = ?"
         params.append(selected_city)
     if selected_zip:
-        query += " AND zip = ?"
+        query += " AND Zip = ?"
         params.append(selected_zip)
 
     providers = conn.execute(query, params).fetchall()
-
-    # City dropdown
-    cities = [row['city'] for row in conn.execute(
-        "SELECT DISTINCT city FROM locations WHERE state = ? AND city IS NOT NULL ORDER BY city", (selected_state,))]
+    cities = [row['City'] for row in conn.execute(
+        "SELECT DISTINCT City FROM locations WHERE State = ? AND City IS NOT NULL ORDER BY City", (selected_state,))]
 
     conn.close()
-
     filters = {'state': selected_state, 'city': selected_city, 'zip': selected_zip}
 
     return render_template('customer.html',
@@ -154,98 +221,6 @@ def customer():
                            cities=cities,
                            providers=providers,
                            filters=filters)
-
-@app.route('/test_maps')
-def test_maps():
-    return render_template('test_maps.html')
-
-vaccinations_list = [
-    {'field': 'Is_Flu', 'label': 'Flu Vaccine'},
-    {'field': 'Is_COVID-19', 'label': 'COVID-19 Vaccine'},
-    {'field': 'Has_USG_Product', 'label': 'USG Product Available'},
-    {'field': 'Has_Commercial_Product', 'label': 'Commercial Product Available'},
-    {'field': 'Has_Paxlovid', 'label': 'Paxlovid'},
-    {'field': 'Has_Commercial_Paxlovid', 'label': 'Commercial Paxlovid'},
-    {'field': 'Has_USG_Paxlovid', 'label': 'USG Paxlovid'},
-    {'field': 'Has_Lagevrio', 'label': 'Lagevrio'},
-    {'field': 'Has_Commercial_Lagevrio', 'label': 'Commercial Lagevrio'},
-    {'field': 'Has_USG_Lagevrio', 'label': 'USG Lagevrio'},
-    {'field': 'Has_Veklury', 'label': 'Veklury'},
-    {'field': 'Has_Oseltamivir_Generic', 'label': 'Oseltamivir Generic'},
-    {'field': 'Has_Oseltamivir_Suspension', 'label': 'Oseltamivir Suspension'},
-    {'field': 'Has_Oseltamivir_Tamiflu', 'label': 'Oseltamivir Tamiflu'},
-    {'field': 'Has_Baloxavir', 'label': 'Baloxavir'},
-    {'field': 'Has_Zanamivir', 'label': 'Zanamivir'},
-    {'field': 'Has_Peramivir', 'label': 'Peramivir'}
-]
-
-@app.route('/provider/vaccinations', methods=['GET', 'POST'])
-def provider_vaccinations():
-    conn = get_db_connection()
-
-    # Fetch filter options
-    states = [row['state'] for row in conn.execute(
-        'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
-
-    cities = []
-    zips = []
-
-    selected_vaccinations = []
-    selected_state = request.form.get('state') if request.method == 'POST' else None
-    selected_city = request.form.get('city') if request.method == 'POST' else None
-    selected_zip = request.form.get('zip') if request.method == 'POST' else None
-
-    # Load cities and zips based on selected state
-    if selected_state:
-        cities = [row['city'] for row in conn.execute(
-            'SELECT DISTINCT city FROM locations WHERE state = ? AND city IS NOT NULL ORDER BY city', (selected_state,))]
-
-    if selected_city:
-        zips = [row['zip'] for row in conn.execute(
-            'SELECT DISTINCT zip FROM locations WHERE city = ? AND zip IS NOT NULL ORDER BY zip', (selected_city,))]
-
-    providers = []
-
-    if request.method == 'POST':
-        selected_vaccinations = request.form.getlist('vaccinations')
-        where_clauses = []
-        params = []
-
-        if selected_vaccinations:
-            where_clauses.append('(' + ' OR '.join([f'"{vacc}" = 1' for vacc in selected_vaccinations]) + ')')
-
-        if selected_state:
-            where_clauses.append('state = ?')
-            params.append(selected_state)
-
-        if selected_city:
-            where_clauses.append('city = ?')
-            params.append(selected_city)
-
-        if selected_zip:
-            where_clauses.append('zip = ?')
-            params.append(selected_zip)
-
-        query = "SELECT * FROM locations"
-        if where_clauses:
-            query += " WHERE " + " AND ".join(where_clauses)
-
-        providers = conn.execute(query, params).fetchall()
-
-    conn.close()
-
-    return render_template('provider_vaccinations.html',
-                           vaccinations=vaccinations_list,
-                           selected_vaccinations=selected_vaccinations,
-                           providers=providers,
-                           states=states,
-                           cities=cities,
-                           zips=zips,
-                           selected_state=selected_state,
-                           selected_city=selected_city,
-                           selected_zip=selected_zip)
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)

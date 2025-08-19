@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3 
-from openai_helper import call_openai_chat
 
 app = Flask(__name__)
 DB_PATH = 'aspr_data.db'
@@ -246,68 +245,6 @@ def provider_vaccinations():
                            selected_city=selected_city,
                            selected_zip=selected_zip)
 
-
-@app.route("/chatbot")
-def chatbot():
-    return render_template("chat_bot.html")
-
-
-
-def get_locations_by_city_or_zip(user_input):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    city = None
-    zip_code = None
-
-    # crude but effective parsing
-    words = user_input.lower().split()
-    for word in words:
-        if word.isdigit() and len(word) == 5:
-            zip_code = word
-        elif word.istitle():
-            city = word
-
-    if zip_code:
-        cursor.execute("SELECT * FROM locations WHERE zip = ?", (zip_code,))
-    elif city:
-        cursor.execute("SELECT * FROM locations WHERE LOWER(city) = ?", (city.lower(),))
-    else:
-        return []
-
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-@app.route("/chatbot/message", methods=["POST"])
-def chatbot_message():
-    data = request.get_json()
-    user_message = data.get("message")
-
-    # Step 1: Query DB based on message
-    rows = get_locations_by_city_or_zip(user_message)
-
-    # Step 2: Format context
-    if rows:
-        context_lines = []
-        for row in rows[:5]:  # Limit to avoid token overload
-            context_lines.append(
-                f"{row['provider_name']} — {row['address']}, {row['city']}, {row['state']} {row['zip']} | Phone: {row['phone']}"
-            )
-        context = "\n".join(context_lines)
-    else:
-        context = "No matching locations found in the database."
-
-    # Step 3: Pass context to GPT
-    prompt = f"""User asked: "{user_message}"
-
-Use ONLY the context below to answer their question. If no data is relevant, say so.
-
-Context:
-{context}
-"""
-    bot_response = call_openai_chat(prompt)
-    return jsonify({"response": bot_response})
 
 
 if __name__ == '__main__':

@@ -1,5 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
-import sqlite3 
+import sqlite3
+import os
+from dotenv import load_dotenv
+import openai
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get the OpenAI API key from environment variables
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 app = Flask(__name__)
 DB_PATH = 'aspr_data.db'
@@ -8,6 +17,11 @@ def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+@app.route('/chatbot')
+def chatbot_page():
+    return render_template('chatbot.html')
+
 
 # ---------------- API ----------------
 @app.route('/api/states')
@@ -25,6 +39,64 @@ def get_states():
 
     states = [{"state": row["state"], "lat": row["lat"], "lng": row["lng"]} for row in rows]
     return jsonify(states)
+
+# ---------------- CHATBOT API ----------------
+@app.route('/api/chatbot', methods=['GET'])
+def chatbot():
+    user_query = request.args.get('question')
+    if not user_query:
+        return jsonify({
+            'answer': "Please provide a valid query.",
+            'locations': []
+        })
+
+    conn = get_db_connection()
+    query = """
+        SELECT Provider_Name, Address_1, Address_2, City, State, Zip, Public_Phone, Appointment_URL
+        FROM locations
+        WHERE Provider_Name LIKE ? OR Address_1 LIKE ? OR City LIKE ?
+    """
+    params = ('%' + user_query + '%', '%' + user_query + '%', '%' + user_query + '%')
+    rows = conn.execute(query, params).fetchall()
+
+    locations = [
+        {
+            'Provider_Name': row['Provider_Name'],
+            'Address_1': row['Address_1'],
+            'Address_2': row['Address_2'],
+            'City': row['City'],
+            'State': row['State'],
+            'Zip': row['Zip'],
+            'Public_Phone': row['Public_Phone'],
+            'Appointment_URL': row['Appointment_URL']
+        }
+        for row in rows
+    ]
+    conn.close()
+
+    prompt = f"User asked: {user_query}. Provide a helpful, concise answer."
+    if locations:
+        prompt += f"\nThere are {len(locations)} matching locations in the database."
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant providing info about healthcare locations."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=150,
+            temperature=0.7,
+        )
+        answer = response['choices'][0]['message']['content'].strip()
+    except Exception as e:
+        answer = "Sorry, I couldn't process your request at this time."
+
+    return jsonify({
+        'answer': answer,
+        'locations': locations
+    })
+
 
 # ---------------- HOME ----------------
 @app.route('/')

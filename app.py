@@ -2,13 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
 import os
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Get the OpenAI API key from environment variables
-openai.api_key = os.getenv('OPENAI_API_KEY')
+client = OpenAI(api_key=os.getenv("API_KEY"))
 
 app = Flask(__name__)
 DB_PATH = 'aspr_data.db'
@@ -40,62 +40,108 @@ def get_states():
     states = [{"state": row["state"], "lat": row["lat"], "lng": row["lng"]} for row in rows]
     return jsonify(states)
 
-# ---------------- CHATBOT API ----------------
+def generate_sql_from_prompt(prompt):
+    system_message = (
+        "You are a helpful assistant that translates natural language questions "
+        "into SQL queries for a SQLite table named 'locations'.\n"
+        "ONLY use the exact column names listed below — do not infer or rename anything.\n"
+        "Respond ONLY with a valid SQL query. Do not include explanations.\n\n"
+        "Available columns:\n"
+        "- Provider_Name\n"
+        "- Address_1\n"
+        "- Address_2\n"
+        "- City\n"
+        "- State\n"
+        "- Zip\n"
+        "- Public_Phone\n"
+        "- Latitude\n"
+        "- Longitude\n"
+        "- Geopoint\n"
+        "- Last_Report_Date\n"
+        "- Is_PAP_Site\n"
+        "- Prescribing_Services_Available\n"
+        "- Appointment_URL\n"
+        "- Home_Delivery\n"
+        "- Is_ICATT_Site\n"
+        "- Has_USG_Product\n"
+        "- Has_Commercial_Product\n"
+        "- Has_Paxlovid\n"
+        "- Has_Commercial_Paxlovid\n"
+        "- Has_USG_Paxlovid\n"
+        "- Has_Lagevrio\n"
+        "- Has_Commercial_Lagevrio\n"
+        "- Has_USG_Lagevrio\n"
+        "- Has_Veklury\n"
+        "- Has_Oseltamivir_Generic\n"
+        "- Has_Oseltamivir_Suspension\n"
+        "- Has_Oseltamivir_Tamiflu\n"
+        "- Has_Baloxavir\n"
+        "- Has_Zanamivir\n"
+        "- Has_Peramivir\n"
+        "- Grantee_Code\n"
+        "- Is_Flu\n"
+        "- Is_COVID-19\n"
+    )
+
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return response.choices[0].message.content.strip()
+
+
 @app.route('/api/chatbot', methods=['GET'])
 def chatbot():
-    user_query = request.args.get('question')
+    user_query = request.args.get('question', '').strip()
+
     if not user_query:
-        return jsonify({
-            'answer': "Please provide a valid query.",
-            'locations': []
-        })
-
-    conn = get_db_connection()
-    query = """
-        SELECT Provider_Name, Address_1, Address_2, City, State, Zip, Public_Phone, Appointment_URL
-        FROM locations
-        WHERE Provider_Name LIKE ? OR Address_1 LIKE ? OR City LIKE ?
-    """
-    params = ('%' + user_query + '%', '%' + user_query + '%', '%' + user_query + '%')
-    rows = conn.execute(query, params).fetchall()
-
-    locations = [
-        {
-            'Provider_Name': row['Provider_Name'],
-            'Address_1': row['Address_1'],
-            'Address_2': row['Address_2'],
-            'City': row['City'],
-            'State': row['State'],
-            'Zip': row['Zip'],
-            'Public_Phone': row['Public_Phone'],
-            'Appointment_URL': row['Appointment_URL']
-        }
-        for row in rows
-    ]
-    conn.close()
-
-    prompt = f"User asked: {user_query}. Provide a helpful, concise answer."
-    if locations:
-        prompt += f"\nThere are {len(locations)} matching locations in the database."
+        return jsonify({'answer': "Please enter a valid question."})
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant providing info about healthcare locations."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150,
-            temperature=0.7,
-        )
-        answer = response['choices'][0]['message']['content'].strip()
-    except Exception as e:
-        answer = "Sorry, I couldn't process your request at this time."
+        sql = generate_sql_from_prompt(user_query)
+        print(f"Generated SQL:\n{sql}")
 
-    return jsonify({
-        'answer': answer,
-        'locations': locations
-    })
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        conn.close()
+
+        if not rows:
+            return jsonify({'answer': "Sorry, I couldn't find any matching treatment locations."})
+
+        # Format up to 5 results for display
+        results = []
+        for row in rows:
+            row_dict = dict(zip(columns, row))
+            meds = []
+            for med_col in ['Has_Paxlovid', 'Has_Lagevrio', 'Has_Veklury']:
+                if row_dict.get(med_col):
+                    meds.append(med_col.replace('Has_', ''))
+            meds_str = ", ".join(meds) if meds else "No specific medications listed"
+
+            answer_part = (
+                f"Provider: {row_dict.get('Provider_Name', 'N/A')}\n"
+                f"Address: {row_dict.get('Address_1', '')} {row_dict.get('Address_2', '')}, "
+                f"{row_dict.get('City', '')}, {row_dict.get('State', '')} {row_dict.get('Zip', '')}\n"
+                f"Phone: {row_dict.get('Public_Phone', 'N/A')}\n"
+                f"Medications available: {meds_str}\n"
+            )
+            results.append(answer_part)
+
+        full_answer = f"I found {len(rows)} matching treatment locations:\n\n" + "\n---\n".join(results)
+        return jsonify({'answer': full_answer})
+
+    except sqlite3.Error as e:
+        return jsonify({'answer': f"Database error occurred: {e}"})
+    except Exception as e:
+        return jsonify({'answer': f"An error occurred: {e}"})
 
 
 # ---------------- HOME ----------------

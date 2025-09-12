@@ -1,66 +1,140 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8" />
-    <title>Chatbot</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-        #chatbox { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; margin-bottom: 10px; }
-        .user-msg { text-align: right; color: blue; margin: 5px; }
-        .bot-msg { text-align: left; color: green; margin: 5px; }
-        #input-area { display: flex; }
-        #question { flex: 1; padding: 10px; font-size: 1em; }
-        button { padding: 10px 20px; }
-    </style>
+  <title>Healthcare Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .chat-box {
+      max-height: 500px;
+      overflow-y: auto;
+      padding-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      margin: 10px 0;
+      padding: 10px 15px;
+      border-radius: 8px;
+      max-width: 75%;
+      white-space: pre-wrap; /* preserve line breaks */
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #007BFF;
+      color: white;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background: #e6e6e6;
+    }
+
+    .input-area {
+      display: flex;
+      margin-top: 10px;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .input-area button {
+      padding: 12px 20px;
+      margin-left: 10px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <h1>Chatbot</h1>
-    <div id="chatbox"></div>
-    <div id="input-area">
-        <input type="text" id="question" placeholder="Ask me about locations..." />
-        <button onclick="sendQuestion()">Send</button>
+  <div class="container">
+    <h2>💬 Treatment Location Chatbot</h2>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="input-area">
+      <input type="text" id="questionInput" placeholder="Ask about locations, medications..." autofocus>
+      <button onclick="sendMessage()">Send</button>
     </div>
+  </div>
 
-    <script>
-        const chatbox = document.getElementById('chatbox');
-        const questionInput = document.getElementById('question');
+  <script>
+    const chatBox = document.getElementById('chatBox');
+    const input = document.getElementById('questionInput');
 
-        function appendMessage(message, sender) {
-            const div = document.createElement('div');
-            div.className = sender === 'user' ? 'user-msg' : 'bot-msg';
-            div.textContent = message;
-            chatbox.appendChild(div);
-            chatbox.scrollTop = chatbox.scrollHeight;
-        }
+    function appendMessage(sender, text) {
+      const msg = document.createElement('div');
+      msg.className = `message ${sender}`;
+      msg.innerText = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
-        async function sendQuestion() {
-            const question = questionInput.value.trim();
-            if (!question) return;
+    function sendMessage() {
+      const question = input.value.trim();
+      if (!question) return;
 
-            appendMessage(question, 'user');
-            questionInput.value = '';
+      appendMessage('user', question);
+      input.value = '';
 
-            try {
-                const response = await fetch(`/api/chatbot?question=${encodeURIComponent(question)}`);
-                const data = await response.json();
+      // Show temporary "Thinking..." message
+      const thinkingMsg = document.createElement('div');
+      thinkingMsg.className = 'message bot';
+      thinkingMsg.innerText = 'Thinking...';
+      chatBox.appendChild(thinkingMsg);
+      chatBox.scrollTop = chatBox.scrollHeight;
 
-                appendMessage(data.answer, 'bot');
+      // Call your actual Flask chatbot API
+      fetch(`/api/chatbot?question=${encodeURIComponent(question)}`)
+        .then(response => response.json())
+        .then(data => {
+          thinkingMsg.remove();
 
-                if (data.locations && data.locations.length > 0) {
-                    data.locations.forEach(loc => {
-                        appendMessage(`- ${loc.Provider_Name}, ${loc.Address_1}, ${loc.City}, ${loc.State}`, 'bot');
-                    });
-                }
-            } catch (err) {
-                appendMessage("Sorry, something went wrong.", 'bot');
-            }
-        }
-
-        questionInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                sendQuestion();
-            }
+          if (Array.isArray(data.answer)) {
+            // Multiple messages (one per location or batch)
+            data.answer.forEach(part => {
+              appendMessage('bot', part);
+            });
+          } else {
+            // Single message
+            appendMessage('bot', data.answer);
+          }
+        })
+        .catch(error => {
+          thinkingMsg.remove();
+          console.error('Chatbot error:', error);
+          appendMessage('bot', 'Sorry, there was an error processing your request.');
         });
-    </script>
+    }
+
+    input.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  </script>
 </body>
 </html>

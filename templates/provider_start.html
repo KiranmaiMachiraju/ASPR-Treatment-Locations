@@ -1,68 +1,85 @@
 {% extends "template.html" %}
 
 {% block content %}
-<h2 class="mt-4 mb-4">Provider Dashboard Overview</h2>
+<div class="container-fluid mt-4">
 
-<!-- KPI Cards -->
-<div class="row mb-4">
-  <div class="col-md-3">
-    <div class="card text-white bg-primary mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Total Providers</h5>
-        <p class="card-text">{{ kpis.total_providers }}</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-white bg-success mb-3">
-      <div class="card-body">
-        <h5 class="card-title">PAP Sites</h5>
-        <p class="card-text">{{ kpis.total_pap_sites }}</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-white bg-warning mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Prescribing Services</h5>
-        <p class="card-text">{{ kpis.total_prescribers }}</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-white bg-danger mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Flu / COVID-19</h5>
-        <p class="card-text">{{ kpis.total_flu }} / {{ kpis.total_covid }}</p>
-      </div>
-    </div>
-  </div>
-</div>
+  <div class="row">
+    <!-- Left Column: Major KPIs / Charts -->
+    <div class="col-lg-9">
+      <h2 class="mb-4">Provider Dashboard Overview</h2>
 
-<!-- State Selection -->
-<form method="POST">
-  <div class="form-group mb-3">
-    <label for="state">Select State</label>
-    <select class="form-control" name="state" id="state">
-      <option value="">-- Choose a state --</option>
-      {% for state in states %}
-        <option value="{{ state }}">{{ state }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <button type="submit" class="btn btn-primary">View Providers</button>
-</form>
+      <!-- KPI Cards Row -->
+      <div class="row mb-4 g-3">
+        <div class="col-md-3">
+          <div class="card metallic-card p-3">
+            <h5 class="card-title">Total Providers</h5>
+            <p class="card-text">{{ kpis.total_providers }}</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card metallic-card p-3">
+            <h5 class="card-title">PAP Sites</h5>
+            <p class="card-text">{{ kpis.total_pap_sites }}</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card metallic-card p-3">
+            <h5 class="card-title">Prescribing Services</h5>
+            <p class="card-text">{{ kpis.total_prescribers }}</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card metallic-card p-3">
+            <h5 class="card-title">Flu / COVID-19</h5>
+            <p class="card-text">{{ kpis.total_flu }} / {{ kpis.total_covid }}</p>
+          </div>
+        </div>
+      </div>
 
-<!-- Charts -->
-<div class="row mt-5">
-  <div class="col-md-6">
-    <h5>Providers per State</h5>
-    <canvas id="stateChart"></canvas>
+      <!-- Charts Row -->
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card metallic-card p-3">
+            <h5 class="mb-3">Providers per State</h5>
+            <canvas id="stateChart"></canvas>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card metallic-card p-3">
+            <h5 class="mb-3">Medication Availability</h5>
+            <canvas id="medChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: State Selection -->
+    <div class="col-lg-3">
+      <div class="card metallic-card p-3 mb-4">
+        <h4 class="mb-3">Filter by State</h4>
+        <form method="POST">
+          <div class="form-group mb-3">
+            <select class="form-control" name="state" id="state">
+              <option value="">-- Choose a state --</option>
+              {% for state in states %}
+                <option value="{{ state }}">{{ state }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-metallic w-100">View Providers</button>
+        </form>
+      </div>
+
+      <!-- Optional: quick summary stats -->
+      <div class="card metallic-card p-3">
+        <h5 class="mb-3">Summary</h5>
+        <p>Total Paxlovid: {{ med_rows.paxlovid }}</p>
+        <p>Total Lagevrio: {{ med_rows.lagevrio }}</p>
+        <p>Total Veklury: {{ med_rows.veklury }}</p>
+      </div>
+    </div>
   </div>
-  <div class="col-md-6">
-    <h5>Medication Availability</h5>
-    <canvas id="medChart"></canvas>
-  </div>
+
 </div>
 
 <!-- Chart.js -->
@@ -77,7 +94,7 @@
       datasets: [{
         label: 'Providers',
         data: {{ providers_chart|tojson }},
-        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+        backgroundColor: 'rgba(192,192,192,0.8)'
       }]
     },
     options: {
@@ -99,9 +116,9 @@
           {{ med_rows.veklury }}
         ],
         backgroundColor: [
-          'rgba(75, 192, 192, 0.6)',
-          'rgba(255, 206, 86, 0.6)',
-          'rgba(255, 99, 132, 0.6)'
+          'rgba(192,192,192,0.8)',
+          'rgba(160,160,160,0.8)',
+          'rgba(128,128,128,0.8)'
         ]
       }]
     },

@@ -1,32 +1,32 @@
 /* Body */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #121212;
+    background-color: #0d1b2a; /* Deep Midnight Blue */
     color: #e0e0e0;
 }
 
 /* Navbar */
 .navbar {
-    background: linear-gradient(145deg, #1f1f1f, #2b2b2b);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    background: linear-gradient(145deg, #0f233e, #162b4d); /* Deep blue gradient */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     border-bottom: 2px solid #c0c0c0;
 }
 
 .navbar .navbar-brand {
-    color: #c0c0c0 !important;
+    color: #e0e0e0 !important;
     font-size: 1.6rem;
-    text-shadow: 1px 1px 2px #000;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 .navbar .nav-link {
-    color: #c0c0c0 !important;
+    color: #e0e0e0 !important;
     font-weight: 500;
     margin-left: 1rem;
     transition: all 0.3s ease;
 }
 
 .navbar .nav-link:hover {
-    color: #fff !important;
+    color: #ffd700 !important; /* subtle gold hover */
     text-shadow: 0 0 5px #fff, 0 0 10px #c0c0c0;
 }
 
@@ -36,9 +36,9 @@ main.container {
     padding: 2rem 1rem;
 }
 
-/* Fancy Double-lined Cards */
-.card {
-    background: linear-gradient(145deg, #1b1b1b, #2a2a2a);
+/* Metallic Cards */
+.metallic-card {
+    background: linear-gradient(145deg, #1a2a44, #0f1b33); /* metallic dark gradient */
     border: 2px double #c0c0c0;
     border-radius: 15px;
     padding: 1.5rem;
@@ -47,55 +47,51 @@ main.container {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.card:hover {
+.metallic-card:hover {
     transform: translateY(-8px);
     box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
 }
 
 /* Buttons */
-.btn-primary {
+.btn-metallic {
     background: linear-gradient(145deg, #c0c0c0, #9a9a9a);
-    color: #121212;
+    color: #0d1b2a; /* text contrast */
     border: 2px solid #e0e0e0;
     font-weight: 600;
     transition: all 0.3s ease;
 }
 
-.btn-primary:hover {
+.btn-metallic:hover {
     background: linear-gradient(145deg, #fff, #c0c0c0);
-    color: #000;
+    color: #0d1b2a;
     box-shadow: 0 0 15px #fff, 0 0 30px #c0c0c0;
 }
 
 /* Headings */
-h1, h2, h3, h4 {
+h1, h2, h3, h4, h5 {
     font-weight: 700;
     color: #e0e0e0;
-    text-shadow: 1px 1px 3px #000;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
 }
 
 /* Paragraphs */
 p {
     line-height: 1.7;
-    color: #bfbfbf;
+    color: #d0d0d0;
 }
 
-/* Metallic Borders Utility */
-.metal-border {
-    border: 2px double #c0c0c0;
-    border-radius: 10px;
-    padding: 1rem;
-    background: linear-gradient(145deg, #1c1c1c, #2a2a2a);
-    box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
-}
-
-/* Footer (if used) */
+/* Footer */
 footer {
     padding: 2rem 0;
     text-align: center;
-    background: linear-gradient(145deg, #1f1f1f, #2b2b2b);
+    background: linear-gradient(145deg, #0f233e, #162b4d);
     border-top: 2px double #c0c0c0;
-    color: #c0c0c0;
+    color: #e0e0e0;
+}
+
+/* Floating Vaccines (optional) */
+.metallic-vaccines .vaccine {
+    background: radial-gradient(circle at 30% 30%, #c0c0c0, #9a9a9a 70%);
 }
 
 /* Responsive adjustments */
@@ -109,4 +105,3 @@ footer {
         padding: 1rem;
     }
 }
-

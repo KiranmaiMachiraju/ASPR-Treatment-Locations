@@ -5,15 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{url_for('static',filename='css/app.css')}}">
+    <link rel="stylesheet" href="{{url_for('static',filename='app.css')}}">
     <title>Hello, world!</title>
   </head>
   <body>
     {% extends "template.html" %}
 
     {% block content %}
+
+    <h1 class="text-center mb-4">Vaccination & Medication Guidance</h1>
+  <!-- Info Cards -->
+  <div class="row justify-content-center g-4">
+    <div class="col-md-4">
+      <div class="card metallic-card p-3">
+        <h4 class="card-title">Flu Vaccine</h4>
+        <p class="card-text">
+          Recommended annually for everyone over 6 months of age. High-risk groups include seniors, pregnant individuals, and those with chronic illnesses.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card metallic-card p-3">
+        <h4 class="card-title">COVID-19 Vaccine</h4>
+        <p class="card-text">
+          Recommended for everyone 6 months and older. Booster shots advised for adults, especially those at higher risk of severe illness.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card metallic-card p-3">
+        <h4 class="card-title">Paxlovid / Antivirals</h4>
+        <p class="card-text">
+          Antiviral treatments for COVID-19 for high-risk patients. Must be taken soon after symptom onset.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center g-4 mt-3">
+    <div class="col-md-4">
+      <div class="card metallic-card p-3">
+        <h4 class="card-title">Lagevrio</h4>
+        <p class="card-text">
+          Another antiviral option for COVID-19. Recommended for high-risk adults. Early administration is critical.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card metallic-card p-3">
+        <h4 class="card-title">Veklury (Remdesivir)</h4>
+        <p class="card-text">
+          Intravenous antiviral for hospitalized COVID-19 patients. Administered under medical supervision.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card metallic-card p-3">
+        <h4 class="card-title">Other Antivirals</h4>
+        <p class="card-text">
+          Includes Oseltamivir, Zanamivir, Peramivir, Baloxavir. Typically used for influenza and should follow healthcare provider guidance.
+        </p>
+      </div>
+    </div>
+  </div>
+
     <div class="container text-center mt-5">
-    <h1 class="mb-4">Welcome! How would you like to use the application?</h1>
+    <h1 class="mb-4">How would you like to use the application?</h1>
     <div class="row justify-content-center">
         <div class="col-md-4">
         <div class="card shadow p-3">
@@ -26,7 +83,7 @@
         <div class="card shadow p-3">
             <h3 class="card-title">I'm a Customer</h3>
             <p class="card-text">Find nearby pharmacies and available medications.</p>
-            <a href="{{ url_for('customer') }}" class="btn btn-success">Enter as Customer</a>
+            <a href="{{ url_for('customer') }}" class="btn btn-primary">Enter as Customer</a>
         </div>
         </div>
     </div>

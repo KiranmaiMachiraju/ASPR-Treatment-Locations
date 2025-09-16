@@ -1,20 +1,43 @@
 {% extends "template.html" %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="card shadow-lg border-0 rounded-3 metallic-card">
-    <div class="card-header text-metallic fw-bold">
-      💬 Treatment Location Chatbot
-    </div>
-    <div class="card-body d-flex flex-column" style="height: 600px;">
-      <!-- Chat window -->
-      <div id="chatBox" class="flex-grow-1 overflow-auto p-3 chat-window">
-      </div>
 
-      <!-- Input area -->
-      <div class="input-group mt-3">
-        <input type="text" id="questionInput" class="form-control input-metallic" placeholder="Ask about locations, medications..." autofocus>
-        <button class="btn btn-metallic" type="button" onclick="sendMessage()">Send</button>
+<div class="container-fluid py-4">
+  <div class="row g-4">
+    <!-- Chatbot card -->
+    <div class="col-lg-8">
+      <div class="card shadow-lg border-0 rounded-3 metallic-card">
+        <div class="card-header text-metallic fw-bold">
+          💬 Treatment Location Chatbot
+        </div>
+        <div class="card-body d-flex flex-column" style="height: 600px;">
+          <!-- Chat window -->
+          <div id="chatBox" class="flex-grow-1 overflow-auto p-3 chat-window"></div>
+
+          <!-- Input area -->
+          <div class="input-group mt-3">
+            <input type="text" id="questionInput" class="form-control input-metallic" placeholder="Ask about locations, medications..." autofocus>
+            <button class="btn btn-metallic" type="button" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar instructions -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 rounded-3 metallic-card p-3">
+        <div class="card-header text-metallic fw-bold">💡 How to Ask</div>
+        <div class="card-body">
+          <p>Examples of questions you can ask the chatbot:</p>
+          <ul>
+            <li>Find COVID-19 treatment locations in <strong>GU</strong> or <strong>GA</strong></li>
+            <li>List all providers with <strong>Paxlovid</strong></li>
+            <li>Where can I get <strong>Lagevrio</strong> in a specific state?</li>
+            <li>Show providers with <strong>Veklury</strong> in my area</li>
+            <li>Flu vaccination locations in <strong>NY</strong></li>
+          </ul>
+          <p class="small text-muted">Use <strong>state codes</strong> (e.g., GU, GA, NY) rather than full names for best results.</p>
+        </div>
       </div>
     </div>
   </div>

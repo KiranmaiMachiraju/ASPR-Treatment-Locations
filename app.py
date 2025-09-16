@@ -9,6 +9,7 @@ load_dotenv()
 
 # Get the OpenAI API key from environment variables
 client = OpenAI(api_key=os.getenv("API_KEY"))
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
 app = Flask(__name__)
 DB_PATH = 'aspr_data.db'
@@ -313,7 +314,7 @@ def customer_start():
         if selected_state:
             return redirect(url_for('customer', state=selected_state))
     
-    return render_template('test_maps.html', states=states)
+    return render_template('test_maps.html', google_maps_api_key=GOOGLE_MAPS_API_KEY)
 
 
 # ---------------- CUSTOMER VIEW ----------------

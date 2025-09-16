@@ -1,92 +1,52 @@
-<!-- <!DOCTYPE html>
-<html>
-  <head>
-    <title>USA Map - Google Maps API</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
-    <style>
-      /* Make the map full-screen */
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      #map {
-        height: 100%;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
 
-    Load Google Maps JavaScript API
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAckXDlywKnysPfXmrNtnxk-1SHkFk0OQ&callback=initMap"
-      async
-      defer
-    ></script> -->
+{% extends "template.html" %}
 
-    <!-- <script>
-      function initMap() {
-        const usaCenter = { lat: 39.8283, lng: -98.5795 }; // Approximate center of the continental US
-        const map = new google.maps.Map(document.getElementById("map"), {
-          zoom: 4,
-          center: usaCenter,
-        });
-      }
-    </script>
-  </body>
-</html> -->
+{% block content %}
+<style>
+  html, body, #map {
+    height: 95%;
+    margin: 0;
+    padding: 0;
+  }
 
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Select State on Map</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    html, body, #map {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
+  /* Force map to ignore container padding */
+  #map {
+    min-height: 85vh;  /* fills almost the full viewport */
+    width: 100%;
+  }
+</style>
 
-  <script>
-    let map;
+<div id="map"></div>
 
-    function initMap() {
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 39.8283, lng: -98.5795 }, // Center of USA
-        zoom: 4,
-      });
+<script>
+  let map;
 
-      fetch('/api/states')
-  .then(response => response.json())
-  .then(states => {
-    states.forEach(state => {
-      const marker = new google.maps.Marker({
-        position: { lat: state.lat, lng: state.lng },
-        map: map,
-        title: state.state
-      });
-
-      marker.addListener('click', () => {
-        // Redirect to provider page with the selected state as a query param
-        window.location.href = `/provider?state=${state.state}`;
-      });
+  function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 39.8283, lng: -98.5795 }, // USA center
+      zoom: 3.5,
     });
-  });
 
-    }
-  </script>
+    fetch('/api/states')
+      .then(response => response.json())
+      .then(states => {
+        states.forEach(state => {
+          const marker = new google.maps.Marker({
+            position: { lat: state.lat, lng: state.lng },
+            map: map,
+            title: state.state
+          });
 
-  <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAckXDlywKnysPfXmrNtnxk-1SHkFk0OQ&callback=initMap"
-    async defer
-  ></script>
-</body>
-</html>
+          marker.addListener('click', () => {
+            window.location.href = `/provider?state=${state.state}`;
+          });
+        });
+      });
+  }
+</script>
+
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAckXDlywKnysPfXmrNtnxk-1SHkFk0OQ&callback=initMap"
+  async defer
+></script>
+{% endblock %}

@@ -38,16 +38,10 @@
 
       <!-- Charts Row -->
       <div class="row g-4">
-        <div class="col-md-6">
+        <div class="col-md-6" style="width: 1500px;">
           <div class="card metallic-card p-3">
             <h5 class="mb-3">Providers per State</h5>
             <canvas id="stateChart"></canvas>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card metallic-card p-3">
-            <h5 class="mb-3">Medication Availability</h5>
-            <canvas id="medChart"></canvas>
           </div>
         </div>
       </div>
@@ -70,13 +64,13 @@
         </form>
       </div>
 
-      <!-- Optional: quick summary stats -->
       <div class="card metallic-card p-3">
         <h5 class="mb-3">Summary</h5>
         <p>Total Paxlovid: {{ med_rows.paxlovid }}</p>
         <p>Total Lagevrio: {{ med_rows.lagevrio }}</p>
         <p>Total Veklury: {{ med_rows.veklury }}</p>
       </div>
+      
     </div>
   </div>
 

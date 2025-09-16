@@ -80,7 +80,7 @@ def generate_sql_from_prompt(prompt):
         "- Has_Peramivir\n"
         "- Grantee_Code\n"
         "- Is_Flu\n"
-        "- Is_COVID-19\n"
+        "- Is_COVID19\n"
     )
 
     response = client.chat.completions.create(
@@ -179,7 +179,7 @@ def provider_start():
             SUM(Has_Lagevrio) AS total_lagevrio,
             SUM(Has_Veklury) AS total_veklury,
             SUM(Is_Flu) AS total_flu,
-            SUM("Is_COVID-19") AS total_covid
+            SUM("Is_COVID19") AS total_covid
         FROM locations
     """
     kpis = conn.execute(kpi_query).fetchone()
@@ -230,12 +230,14 @@ def provider():
 
     conn = get_db_connection()
 
+    # States for dropdown
     states = [row['state'] for row in conn.execute(
         'SELECT DISTINCT state FROM locations WHERE state IS NOT NULL ORDER BY state')]
 
     selected_city = request.args.get('city')
     selected_zip = request.args.get('zip')
 
+    # Base query
     query = "SELECT * FROM locations WHERE state = ?"
     params = [selected_state]
     if selected_city:
@@ -249,14 +251,16 @@ def provider():
 
     # City dropdown
     cities = [row['city'] for row in conn.execute(
-        "SELECT DISTINCT city FROM locations WHERE state = ? AND city IS NOT NULL ORDER BY city", (selected_state,))]
+        "SELECT DISTINCT city FROM locations WHERE state = ? AND city IS NOT NULL ORDER BY city",
+        (selected_state,)
+    )]
 
     # --- KPIs ---
     stats_query = """
         SELECT
             COUNT(*) AS total_providers,
             SUM(Is_Flu) AS total_flu,
-            SUM("Is_COVID-19") AS total_covid,
+            SUM("Is_COVID19") AS total_covid,
             SUM(Has_USG_Product) AS total_usg_product,
             SUM(Has_Commercial_Product) AS total_commercial_product,
             SUM(Has_Paxlovid) AS total_paxlovid,
@@ -275,18 +279,26 @@ def provider():
         FROM locations
         WHERE state = ?
     """
-    stats = conn.execute(stats_query, (selected_state,)).fetchone()
-
+    stats_row = conn.execute(stats_query, (selected_state,)).fetchone()
     conn.close()
 
-    filters = {'state': selected_state, 'city': selected_city, 'zip': selected_zip}
+    # Convert stats into dict for easier Jinja use
+    stats = dict(stats_row)
 
-    return render_template('provider.html',
-                           states=states,
-                           cities=cities,
-                           providers=providers,
-                           filters=filters,
-                           stats=stats)
+    filters = {
+        'state': selected_state,
+        'city': selected_city,
+        'zip': selected_zip
+    }
+
+    return render_template(
+        'provider.html',
+        states=states,
+        cities=cities,
+        providers=providers,
+        filters=filters,
+        stats=stats
+    )
 
 # ---------------- CUSTOMER START ----------------
 @app.route('/customer/start', methods=['GET', 'POST'])
